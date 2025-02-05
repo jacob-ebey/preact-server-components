@@ -1,10 +1,17 @@
 {
 	"name": "vite-preact-server-components",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"type": "module",
 	"description": "",
 	"main": "dist/vite.js",
 	"types": "dist/vite.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/vite.d.ts",
+			"default": "./dist/vite.js"
+		},
+		"./package.json": "./package.json"
+	},
 	"scripts": {
 		"build": "tsup",
 		"node": "node --experimental-strip-types --disable-warning=ExperimentalWarning",

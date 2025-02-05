@@ -5,8 +5,6 @@ import * as path from "node:path";
 import * as lexer from "es-module-lexer";
 import * as vite from "vite";
 
-import "./types.d.ts";
-
 const jsModuleExtensions = [".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"];
 
 export type PreactServerComponentsOptions = {
@@ -61,8 +59,12 @@ export default function preactServerComponents({
 					{
 						build: {
 							emitAssets: true,
+							manifest: name === environments.client,
 							ssrManifest:
 								serverEnvironments.has(name) || ssrEnvironments.has(name),
+							rollupOptions: {
+								preserveEntrySignatures: "exports-only",
+							},
 						},
 						resolve: {
 							dedupe: ["preact"],
@@ -105,7 +107,7 @@ export default function preactServerComponents({
 								].config.build.rollupOptions.input = mergeRollupInputs(
 									builder.environments[environments.client].config.build
 										.rollupOptions.input,
-									Array.from(foundModules.client.values()),
+									Array.from(foundModules.client.keys()),
 								);
 								const clientOutput = (await builder.build(
 									builder.environments[environments.client],
@@ -155,14 +157,14 @@ export default function preactServerComponents({
 		},
 		resolveId(id) {
 			if (id === "virtual:preact-server-components/client") {
-				return "\0virtual:preact-server/client";
+				return "\0virtual:preact-server-components/client";
 			}
 			if (id === "virtual:preact-server-components/server") {
-				return "\0virtual:preact-server/server";
+				return "\0virtual:preact-server-components/server";
 			}
 		},
 		load(id) {
-			if (id === "\0virtual:preact-server/client") {
+			if (id === "\0virtual:preact-server-components/client") {
 				if (
 					environments.client !== this.environment.name &&
 					!ssrEnvironments.has(this.environment.name)
@@ -172,7 +174,7 @@ export default function preactServerComponents({
 					);
 				}
 				if (this.environment.mode !== "dev") {
-					if (this.environment.name !== "client") {
+					if (this.environment.name !== environments.client) {
 						return `
                             const clientModules = {
                             ${Array.from(foundModules.client.keys())
@@ -219,7 +221,7 @@ export default function preactServerComponents({
                 `;
 			}
 
-			if (id === "\0virtual:preact-server/server") {
+			if (id === "\0virtual:preact-server-components/server") {
 				if (!serverEnvironments.has(this.environment.name)) {
 					throw new Error(
 						"Cannot load server references outside of server environments",
