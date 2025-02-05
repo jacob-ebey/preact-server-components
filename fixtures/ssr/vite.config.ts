@@ -29,6 +29,9 @@ export default defineConfig({
 					input: "src/ssr.tsx",
 				},
 			},
+			resolve: {
+				noExternal: true,
+			},
 		},
 		server: {
 			consumer: "server",
@@ -41,6 +44,9 @@ export default defineConfig({
 			dev: {
 				createEnvironment: (name, config) =>
 					createRunnableDevEnvironment(name, config),
+			},
+			resolve: {
+				noExternal: true,
 			},
 		},
 	},
