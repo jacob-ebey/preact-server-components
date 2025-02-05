@@ -1,0 +1,9 @@
+{
+	"private": true,
+  "scripts": {
+    "build": "pnpm run -r build"
+  },
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4"
+	}
+}

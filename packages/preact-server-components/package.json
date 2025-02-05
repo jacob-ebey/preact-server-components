@@ -1,0 +1,39 @@
+{
+	"name": "preact-server-components",
+	"version": "0.0.0",
+	"type": "module",
+	"description": "",
+	"main": "dist/preact-server-components.js",
+	"types": "dist/preact-server-components.d.ts",
+	"scripts": {
+		"build": "tsup",
+		"node": "node --experimental-strip-types --disable-warning=ExperimentalWarning",
+		"test": "pnpm node --test src/*.spec.*"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"peerDependencies": {
+		"preact": "^10.25.4",
+		"turbo-stream": "^3.0.1",
+		"vite": "^6.0.11"
+	},
+	"peerDependenciesMeta": {
+		"vite": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@types/node": "^22.13.1",
+		"expect": "^29.7.0",
+		"preact": "^10.25.4",
+		"preact-render-to-string": "^6.5.13",
+		"tsup": "^8.3.6",
+		"turbo-stream": "^3.0.1",
+		"typescript": "^5.7.3",
+		"vite": "^6.0.11"
+	},
+	"dependencies": {
+		"es-module-lexer": "^1.6.0"
+	}
+}
