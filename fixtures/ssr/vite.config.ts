@@ -6,8 +6,8 @@ import {
 	defineConfig,
 	type RunnableDevEnvironment,
 } from "vite";
-import preactServerComponents from "vite-preact-server-components";
 import mkcert from "vite-plugin-mkcert";
+import preactServerComponents from "vite-preact-server-components";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({

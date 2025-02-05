@@ -17,7 +17,7 @@ importers:
         specifier: ^1.9.4
         version: 1.9.4
 
-  fixtures/static:
+  fixtures/ssr:
     dependencies:
       '@mjackson/node-fetch-server':
         specifier: ^0.5.1
