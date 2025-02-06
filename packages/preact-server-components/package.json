@@ -1,6 +1,6 @@
 {
 	"name": "preact-server-components",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"type": "module",
 	"description": "",
 	"main": "dist/preact-server-components.js",
