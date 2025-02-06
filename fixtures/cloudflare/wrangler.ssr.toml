@@ -1,0 +1,9 @@
+name = "preact-ssr"
+main = "./ssr/ssr.ts"
+compatibility_date = "2024-12-30"
+
+assets = { binding = "ASSETS" }
+
+services = [
+    { binding = "SERVER", service = "preact-server" },
+]

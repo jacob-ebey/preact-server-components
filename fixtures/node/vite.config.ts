@@ -45,9 +45,6 @@ export default defineConfig({
 				createEnvironment: (name, config) =>
 					createRunnableDevEnvironment(name, config),
 			},
-			resolve: {
-				noExternal: true,
-			},
 		},
 	},
 	plugins: [

@@ -1,5 +1,5 @@
 import type { ComponentType, VNode } from "preact";
-import { lazy } from "preact/compat";
+import { lazy, Suspense } from "preact/compat";
 import { renderToStringAsync } from "preact-render-to-string";
 
 import {
@@ -7,15 +7,15 @@ import {
 	type DecodeServerReferenceFunction,
 	type DecodeClientReferenceFunction,
 } from "preact-server-components";
-// @ts-expect-error - no types
-import { loadClientReference } from "virtual:preact-server-components/client";
+import {
+	assets,
+	loadClientReference,
+	// @ts-expect-error - no types
+} from "virtual:preact-server-components/client";
 
 import type { EncodedClientReference } from "./server";
 
-export async function prerender(
-	html: string,
-	payloadStream: ReadableStream<string>,
-) {
+export async function prerender(payloadStream: ReadableStream<string>) {
 	const [payloadStreamA, payloadStreamB] = payloadStream.tee();
 	const [payload, inlinePayload] = await Promise.all([
 		decode<VNode>(payloadStreamA, {
@@ -26,17 +26,31 @@ export async function prerender(
 	]);
 
 	const rendered = await renderToStringAsync(
-		<>
-			{payload}
-			<script
-				dangerouslySetInnerHTML={{
-					__html: `window.PREACT_STREAM = new ReadableStream({ start(c) { c.enqueue(${escapeHtml(JSON.stringify(inlinePayload))}); c.close(); } });`,
-				}}
-			/>
-		</>,
+		<html lang="en">
+			<head>
+				<meta charset="UTF-8" />
+				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+				<meta name="color-scheme" content="light dark" />
+				<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+			</head>
+
+			<body>
+				<div id="app">
+					<Suspense fallback={null}>{payload}</Suspense>
+				</div>
+				{assets.map((asset: string) => (
+					<script key={asset} type="module" src={asset} />
+				))}
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `window.PREACT_STREAM = new ReadableStream({ start(c) { c.enqueue(${escapeHtml(JSON.stringify(inlinePayload))}); c.close(); } });`,
+					}}
+				/>
+			</body>
+		</html>,
 	);
 
-	return html.replace('<div id="app">', `<div id="app">${rendered}`);
+	return rendered;
 }
 
 const cache = new Map<string, ComponentType>();
@@ -97,6 +111,6 @@ const ESCAPE_LOOKUP: { [match: string]: string } = {
 
 const ESCAPE_REGEX = /[&><\u2028\u2029]/g;
 
-export function escapeHtml(html: string) {
+function escapeHtml(html: string) {
 	return html.replace(ESCAPE_REGEX, (match) => ESCAPE_LOOKUP[match]);
 }

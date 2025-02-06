@@ -91,15 +91,6 @@ let preactDecode = ({
 		}
 
 		if (pluginType === TYPE_COMPONENT) {
-			if (
-				typeof keyOrRendered === "object" &&
-				keyOrRendered !== null &&
-				typeof (keyOrRendered as any).then === "function"
-			) {
-				return {
-					value: keyOrRendered,
-				};
-			}
 			return {
 				value: keyOrRendered,
 			};

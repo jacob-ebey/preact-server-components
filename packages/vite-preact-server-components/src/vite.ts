@@ -29,6 +29,7 @@ export default function preactServerComponents({
 		...serverEnvironments,
 		...ssrEnvironments,
 	]);
+	const serverishEnvironments = [...serverEnvironments, ...ssrEnvironments];
 
 	if (
 		allEnvironments.size !==
@@ -41,16 +42,31 @@ export default function preactServerComponents({
 
 	let building = false;
 	let scanning = false;
-	let manifest: Record<string, unknown> = {};
+	let manifest: PromiseWithResolvers<
+		Record<
+			string,
+			{
+				file: string;
+				imports: string[];
+			}
+		>
+	> = Promise.withResolvers();
 
 	const foundModules = {
 		client: new Map<string, string>(),
 		server: new Map<string, string>(),
 	};
 
+	let clientEntries: string[] = [];
+	const bundles = new Map<string, vite.Rollup.OutputBundle>();
+
 	return {
 		name: "preact-server-components",
 		configEnvironment(name, config) {
+			if (name === environments.client) {
+				clientEntries = rollupInputsToArray(config.build?.rollupOptions?.input);
+			}
+
 			if (allEnvironments.has(name)) {
 				return vite.mergeConfig<
 					vite.EnvironmentOptions,
@@ -82,24 +98,26 @@ export default function preactServerComponents({
 						sharedConfigBuild: true,
 						sharedPlugins: true,
 						async buildApp(builder) {
-							console.log("Scanning application dependency graph...");
+							console.log("scanning dependency graph...");
 							scanning = true;
 
 							try {
-								await Promise.all(
-									Array.from(allEnvironments).map((name) =>
-										builder.build(builder.environments[name]),
-									),
-								);
+								if (config.builder?.buildApp) {
+									await config.builder.buildApp(builder);
+								} else {
+									await Promise.all(
+										Array.from(allEnvironments).map((name) =>
+											builder.build(builder.environments[name]),
+										),
+									);
+								}
 							} finally {
 								scanning = false;
 							}
 
-							console.log("Scanning complete.");
-
+							console.log("scanning complete");
 							building = true;
-
-							console.log("Building client environment...");
+							manifest = Promise.withResolvers();
 
 							try {
 								builder.environments[
@@ -109,39 +127,31 @@ export default function preactServerComponents({
 										.rollupOptions.input,
 									Array.from(foundModules.client.keys()),
 								);
-								const clientOutput = (await builder.build(
-									builder.environments[environments.client],
-								)) as vite.Rollup.RollupOutput;
 
-								const manifestAsset = clientOutput?.output.find(
-									(asset) => asset.fileName === ".vite/manifest.json",
-								);
-								const manifestSource =
-									manifestAsset?.type === "asset" &&
-									(manifestAsset.source as string);
-								manifest = JSON.parse(manifestSource || "{}");
+								if (config.builder?.buildApp) {
+									await config.builder.buildApp(builder);
+								} else {
+									await builder.build(
+										builder.environments[environments.client],
+									);
 
-								console.log(
-									ssrEnvironments.size > 0
-										? "Building server and ssr environments..."
-										: `Building server environment${serverEnvironments.size > 1 ? "s" : ""}...`,
-								);
+									await Promise.all(
+										serverishEnvironments.map((name) =>
+											builder.build(builder.environments[name]),
+										),
+									);
+								}
 
-								const serverishEnvironments = [
-									...serverEnvironments,
-									...ssrEnvironments,
-								];
-								const outputs = await Promise.all(
-									serverishEnvironments.map((name) =>
-										builder.build(builder.environments[name]),
-									),
-								);
-								for (let i = 0; i < serverishEnvironments.length; i++) {
-									const outdir =
-										builder.environments[serverishEnvironments[i]].config.build
-											.outDir;
+								console.log("moving static assets...");
+
+								for (let name of serverEnvironments) {
+									const outdir = builder.environments[name].config.build.outDir;
+									const bundle = bundles.get(name);
+									if (!bundle) {
+										throw new Error(`No bundle found for ${name}`);
+									}
 									moveStaticAssets(
-										outputs[i] as vite.Rollup.RollupOutput,
+										bundle,
 										builder.environments.ssr.config.build.outDir,
 										outdir,
 									);
@@ -155,6 +165,22 @@ export default function preactServerComponents({
 				true,
 			);
 		},
+		writeBundle(_, bundle) {
+			bundles.set(this.environment.name, bundle);
+			if (this.environment.name === environments.client) {
+				const asset = bundle[".vite/manifest.json"];
+				if (!asset || asset.type !== "asset" || !asset.source) {
+					throw new Error("could not find manifest");
+				}
+				manifest.resolve(
+					JSON.parse(
+						typeof asset.source === "string"
+							? asset.source
+							: new TextDecoder().decode(asset.source),
+					),
+				);
+			}
+		},
 		resolveId(id) {
 			if (id === "virtual:preact-server-components/client") {
 				return "\0virtual:preact-server-components/client";
@@ -163,7 +189,7 @@ export default function preactServerComponents({
 				return "\0virtual:preact-server-components/server";
 			}
 		},
-		load(id) {
+		async load(id) {
 			if (id === "\0virtual:preact-server-components/client") {
 				if (
 					environments.client !== this.environment.name &&
@@ -175,24 +201,57 @@ export default function preactServerComponents({
 				}
 				if (this.environment.mode !== "dev") {
 					if (this.environment.name !== environments.client) {
+						let assets = "";
+						if (ssrEnvironments.has(this.environment.name)) {
+							assets = `export const assets = ${JSON.stringify(
+								Array.from(
+									new Set(
+										(
+											await Promise.all(
+												Array.from(new Set(clientEntries)).map(async (input) =>
+													collectChunks(
+														this.environment.config.base,
+														path.relative(this.environment.config.root, input),
+														await manifest.promise,
+													),
+												),
+											)
+										).flat(),
+									),
+								),
+							)}`;
+						}
 						return `
+							${assets}
                             const clientModules = {
-                            ${Array.from(foundModules.client.keys())
-															.map((filename) => {
-																return `${JSON.stringify(
-																	findClientModule(
-																		path.relative(
-																			path.resolve(
-																				this.environment.config.root,
-																			),
-																			filename,
-																		),
-																		manifest,
-																		this.environment.config.base,
-																	).id,
-																)}: () => import(${JSON.stringify(filename)}),`;
-															})
-															.join("  \n")}
+                            ${(
+															await Promise.all(
+																Array.from(foundModules.client.keys()).map(
+																	async (filename) => {
+																		const found = building
+																			? findClientModule(
+																					path.relative(
+																						path.resolve(
+																							this.environment.config.root,
+																						),
+																						filename,
+																					),
+																					await manifest.promise,
+																					this.environment.config.base,
+																				)
+																			: null;
+																		if (building && !found) {
+																			throw new Error(
+																				`Could not find client module for ${filename}`,
+																			);
+																		}
+																		return `${JSON.stringify(
+																			found?.id,
+																		)}: () => import(${JSON.stringify(filename)}),`;
+																	},
+																),
+															)
+														).join("  \n")}
                             };
 
                             export async function loadClientReference([id, name, ...chunks]) {
@@ -207,13 +266,20 @@ export default function preactServerComponents({
                             const importPromise = import(/* @vite-ignore */ id);
                             for (const chunk of chunks) {
                                 import(/* @vite-ignore */ chunk);
-                            }
+										}
                             const mod = await importPromise;
                             return mod[name];
                         }
-                    `;
+						`;
 				}
+
+				let assets = "";
+				if (ssrEnvironments.has(this.environment.name)) {
+					assets = `export const assets = ${JSON.stringify(clientEntries)}`;
+				}
+
 				return `
+					${assets}
                     export async function loadClientReference([id, name]) {
                         const mod = await import(/* @vite-ignore */ id);
                         return mod[name];
@@ -256,7 +322,7 @@ export default function preactServerComponents({
                 `;
 			}
 		},
-		transform(code, id) {
+		async transform(code, id) {
 			if (!isJavaScriptModule(id)) return;
 
 			const directiveMatch = code.match(/['"]use (client|server)['"]/);
@@ -293,10 +359,10 @@ export default function preactServerComponents({
 
 			const [, exports] = lexer.parse(code, id);
 			const mod =
-				building && this.environment.name !== "client"
+				building && serverEnvironments.has(this.environment.name)
 					? findClientModule(
 							path.relative(path.resolve(this.environment.config.root), id),
-							manifest,
+							await manifest.promise,
 							this.environment.config.base,
 						)
 					: null;
@@ -376,11 +442,11 @@ function rollupInputsToArray(
 }
 
 function moveStaticAssets(
-	output: vite.Rollup.RollupOutput,
+	output: vite.Rollup.OutputBundle,
 	outDir: string,
 	clientOutDir: string,
 ) {
-	const manifestAsset = output.output.find(
+	const manifestAsset = Object.values(output).find(
 		(asset) => asset.fileName === ".vite/ssr-manifest.json",
 	);
 	if (!manifestAsset || manifestAsset.type !== "asset")
@@ -403,8 +469,16 @@ function moveStaticAssets(
 	}
 }
 
-function findClientModule(forFilename: string, manifest: any, base: string) {
+function findClientModule(
+	forFilename: string,
+	manifest: Record<string, { file: string; imports: string[] }>,
+	base: string,
+) {
 	const collected = collectChunks(base, forFilename, manifest);
+	if (collected.length === 0) {
+		return null;
+	}
+
 	return {
 		id: collected[0],
 		chunks: collected.slice(1),

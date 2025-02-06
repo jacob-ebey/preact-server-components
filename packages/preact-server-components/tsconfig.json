@@ -4,6 +4,7 @@
 		"module": "NodeNext",
 		"verbatimModuleSyntax": true,
 		"allowImportingTsExtensions": true,
-		"rewriteRelativeImportExtensions": true
+		"rewriteRelativeImportExtensions": true,
+		"strict": true
 	}
 }

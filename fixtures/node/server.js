@@ -1,0 +1,75 @@
+import * as fs from "node:fs";
+
+import { createRequestListener } from "@mjackson/node-fetch-server";
+import compression from "compression";
+import express from "express";
+
+import * as serverMod from "./dist/server/server.js";
+import * as ssrMod from "./dist/ssr/ssr.js";
+
+const HTML = fs.readFileSync("dist/client/index.html", "utf-8");
+
+const app = express();
+
+app.use(compression());
+
+app.use(
+	express.static("dist/client/assets", {
+		immutable: true,
+		maxAge: "1y",
+	}),
+);
+app.use(
+	express.static("dist/client", {
+		dotfiles: "allow",
+	}),
+);
+
+app.use(
+	createRequestListener(async (request) => {
+		const url = new URL(request.url);
+
+		const serverURL = new URL(request.url);
+		serverURL.pathname = serverURL.pathname.replace(/\.data$/, "");
+
+		const serverResponsePromise = serverMod.handleRequest(
+			new Request(serverURL, {
+				body: request.body,
+				duplex:
+					request.method !== "GET" && request.method !== "HEAD"
+						? "half"
+						: undefined,
+				headers: request.headers,
+				method: request.method,
+				signal: request.signal,
+			}),
+		);
+
+		if (
+			url.pathname.endsWith(".data") ||
+			(request.headers.get("psc-action") &&
+				request.method === "POST" &&
+				request.body)
+		) {
+			return serverResponsePromise;
+		}
+
+		const serverResponse = await serverResponsePromise;
+		if (!serverResponse.body) throw new Error("No body.");
+		const body = await ssrMod.prerender(
+			HTML,
+			serverResponse.body.pipeThrough(new TextDecoderStream()),
+		);
+
+		const headers = new Headers(serverResponse.headers);
+		headers.set("content-type", "text/html");
+		return new Response(body, {
+			headers,
+			status: serverResponse.status,
+		});
+	}),
+);
+
+app.listen(3000, () => {
+	console.log("Server started on http://localhost:3000");
+});
