@@ -22,13 +22,7 @@
 	"license": "ISC",
 	"peerDependencies": {
 		"preact": "^10.25.4",
-		"turbo-stream": "^3.0.1",
-		"vite": "^6.0.11"
-	},
-	"peerDependenciesMeta": {
-		"vite": {
-			"optional": true
-		}
+		"turbo-stream": "^3.0.1"
 	},
 	"devDependencies": {
 		"@types/node": "^22.13.1",
@@ -39,8 +33,5 @@
 		"turbo-stream": "^3.0.1",
 		"typescript": "^5.7.3",
 		"vite": "^6.0.11"
-	},
-	"dependencies": {
-		"es-module-lexer": "^1.6.0"
 	}
 }

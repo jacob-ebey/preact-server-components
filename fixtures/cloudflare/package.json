@@ -1,6 +1,6 @@
 {
 	"private": true,
-	"name": "static",
+	"name": "fixture-cloudflare",
 	"type": "module",
 	"scripts": {
 		"build": "vite build",

@@ -155,10 +155,6 @@ importers:
         version: 5.1.4(typescript@5.7.3)(vite@6.0.11(@types/node@22.13.1)(jiti@2.4.2)(lightningcss@1.29.1))
 
   packages/preact-server-components:
-    dependencies:
-      es-module-lexer:
-        specifier: ^1.6.0
-        version: 1.6.0
     devDependencies:
       '@types/node':
         specifier: ^22.13.1

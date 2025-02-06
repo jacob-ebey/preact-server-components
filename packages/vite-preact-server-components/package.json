@@ -20,10 +20,12 @@
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
+	"dependencies": {
+		"es-module-lexer": "^1.6.0"
+	},
 	"peerDependencies": {
 		"preact": "^10.25.4",
 		"preact-server-components": "*",
-		"turbo-stream": "^3.0.1",
 		"vite": "^6.0.11"
 	},
 	"devDependencies": {
@@ -36,8 +38,5 @@
 		"turbo-stream": "^3.0.1",
 		"typescript": "^5.7.3",
 		"vite": "^6.0.11"
-	},
-	"dependencies": {
-		"es-module-lexer": "^1.6.0"
 	}
 }
