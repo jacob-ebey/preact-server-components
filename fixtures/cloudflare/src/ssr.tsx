@@ -38,11 +38,9 @@ export async function prerender(payloadStream: ReadableStream<string>) {
 				<div id="app">
 					<Suspense fallback={null}>{payload}</Suspense>
 				</div>
-				{assets.map((asset: string) =>
-					asset.endsWith(".js") ? (
-						<script key={asset} type="module" src={asset} />
-					) : null,
-				)}
+				{assets.map((asset: string) => (
+					<script key={asset} type="module" src={asset} />
+				))}
 				<script
 					dangerouslySetInnerHTML={{
 						__html: `window.PREACT_STREAM = new ReadableStream({ start(c) { c.enqueue(${escapeHtml(JSON.stringify(inlinePayload))}); c.close(); } });`,
