@@ -1,6 +1,6 @@
 {
 	"name": "vite-preact-server-components",
-	"version": "0.0.3",
+	"version": "0.0.6",
 	"type": "module",
 	"description": "",
 	"main": "dist/vite.js",
@@ -35,7 +35,7 @@
 		"preact-render-to-string": "^6.5.13",
 		"preact-server-components": "workspace:*",
 		"tsup": "^8.3.6",
-		"turbo-stream": "^3.0.1",
+		"turbo-stream": "^3.1.0",
 		"typescript": "^5.7.3",
 		"vite": "^6.0.11"
 	}

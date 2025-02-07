@@ -172,8 +172,8 @@ importers:
         specifier: ^8.3.6
         version: 8.3.6(jiti@2.4.2)(postcss@8.5.1)(typescript@5.7.3)
       turbo-stream:
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       typescript:
         specifier: ^5.7.3
         version: 5.7.3
@@ -206,8 +206,8 @@ importers:
         specifier: ^8.3.6
         version: 8.3.6(jiti@2.4.2)(postcss@8.5.1)(typescript@5.7.3)
       turbo-stream:
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       typescript:
         specifier: ^5.7.3
         version: 5.7.3
@@ -2204,8 +2204,8 @@ packages:
       typescript:
         optional: true
 
-  turbo-stream@3.0.1:
-    resolution: {integrity: sha512-LWME5MaLiV15jA9H66vDGoAmWIQts9Ni4TbibHrsF53vK4J/VvMzyDT9s6gVmsoGXHoU/c37Ar7QmG71xyesIw==}
+  turbo-stream@3.1.0:
+    resolution: {integrity: sha512-tVI25WEXl4fckNEmrq70xU1XumxUwEx/FZD5AgEcV8ri7Wvrg2o7GEq8U7htrNx3CajciGm+kDyhRf5JB6t7/A==}
 
   type-is@1.6.18:
     resolution: {integrity: sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==}
@@ -4193,7 +4193,7 @@ snapshots:
       - tsx
       - yaml
 
-  turbo-stream@3.0.1: {}
+  turbo-stream@3.1.0: {}
 
   type-is@1.6.18:
     dependencies:

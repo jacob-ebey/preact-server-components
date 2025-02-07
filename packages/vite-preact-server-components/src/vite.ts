@@ -66,7 +66,9 @@ export default function preactServerComponents({
 		name: "preact-server-components",
 		configEnvironment(name, config) {
 			if (name === environments.client) {
-				clientEntries = rollupInputsToArray(config.build?.rollupOptions?.input);
+				clientEntries = rollupInputsToArray(
+					config.build?.rollupOptions?.input,
+				).map((p) => vite.normalizePath(path.resolve(p)));
 			}
 
 			if (allEnvironments.has(name)) {
@@ -278,8 +280,8 @@ export default function preactServerComponents({
                         export async function loadClientReference([id, name, ...chunks]) {
                             const importPromise = import(/* @vite-ignore */ id);
                             for (const chunk of chunks) {
-                                import(/* @vite-ignore */ chunk);
-										}
+                                import(/* @vite-ignore */ chunk).catch(() => {});
+							}
                             const mod = await importPromise;
                             return mod[name];
                         }
@@ -382,9 +384,11 @@ export default function preactServerComponents({
 						)
 					: null;
 			let referenceId: string = mod
-				? mod.id
-				: "/" +
-					path.relative(this.environment.config.root, id).replace(/\\/g, "/");
+				? mod.id.startsWith("/")
+					? mod.id
+					: "/" + mod.id
+				: vite.normalizePath(id);
+
 			let chunks: string[] = mod ? mod.chunks : [];
 
 			if (useFor === "client") {
