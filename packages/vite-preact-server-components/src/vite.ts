@@ -13,10 +13,12 @@ export type PreactServerComponentsOptions = {
 		server: string[];
 		ssr?: string[];
 	};
+	massageClientModuleId?: (root: string, id: string) => string;
 };
 
 export default function preactServerComponents({
 	environments,
+	massageClientModuleId,
 }: PreactServerComponentsOptions): vite.Plugin {
 	if (!environments.client) {
 		environments.client = "client";
@@ -211,7 +213,15 @@ export default function preactServerComponents({
 												Array.from(new Set(clientEntries)).map(async (input) =>
 													collectChunks(
 														this.environment.config.base,
-														path.relative(this.environment.config.root, input),
+														massageClientModuleId
+															? massageClientModuleId(
+																	this.environment.config.root,
+																	input,
+																)
+															: path.relative(
+																	this.environment.config.root,
+																	input,
+																),
 														await manifest.promise,
 													),
 												),
@@ -230,12 +240,15 @@ export default function preactServerComponents({
 																	async (filename) => {
 																		const found = building
 																			? findClientModule(
-																					path.relative(
-																						path.resolve(
-																							this.environment.config.root,
-																						),
-																						filename,
-																					),
+																					massageClientModuleId
+																						? massageClientModuleId(
+																								this.environment.config.root,
+																								filename,
+																							)
+																						: path.relative(
+																								this.environment.config.root,
+																								filename,
+																							),
 																					await manifest.promise,
 																					this.environment.config.base,
 																				)
@@ -361,7 +374,9 @@ export default function preactServerComponents({
 			const mod =
 				building && serverEnvironments.has(this.environment.name)
 					? findClientModule(
-							path.relative(path.resolve(this.environment.config.root), id),
+							massageClientModuleId
+								? massageClientModuleId(this.environment.config.root, id)
+								: path.relative(this.environment.config.root, id),
 							await manifest.promise,
 							this.environment.config.base,
 						)
